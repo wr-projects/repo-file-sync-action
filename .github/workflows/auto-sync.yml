@@ -1,0 +1,44 @@
+---
+name: Pipeline - Auto Sync
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '*/15 * * * *'
+
+jobs:
+  build:
+    name: Auto Sync
+    runs-on: ubuntu-latest
+    steps:
+      # More info: https://github.com/peter-murray/workflow-application-token-action.
+      - name: Get token
+        id: get_token
+        uses: peter-murray/workflow-application-token-action@8e1ba3bf1619726336414f1014e37f17fbadf1db
+        with:
+          application_id: ${{ secrets.ID_AUTOSYNCHROBOT }}
+          application_private_key: ${{ secrets.PEM_AUTOSYNCHROBOT }}
+
+      # More info: https://github.com/actions/checkout.
+      - name: Checkout & Authentication
+        uses: actions/checkout@93ea575cb5d8a053eaa0ac8fa3b40d7e05a33cc8
+        with:
+          repository: wr-projects/1password-teams-open-source
+          token: ${{ steps.get_token.outputs.token }}
+          persist-credentials: false
+      
+      - name: Configure Git
+        shell: bash
+        run: |
+          git config --global user.name ${{ secrets.AUTOSYNCHRO_CI_NAME }}
+          git config --global user.email ${{ secrets.AUTOSYNCHRO_CI_EMAIL }}
+      
+      # More info: https://github.com/rovast/sync-upstream-repo.
+      - name: GitHub Sync to Upstream Repository
+        uses: denis-tingajkin/sync-files@7cf3a71d4530214ecee324faf12cf884a275d366
+        with:
+          upstream_repo: https://github.com/BetaHuhn/repo-file-sync-action # change this
+          upstream_branch: master # change this
+          downstream_branch: master # change this
+          token: ${{ steps.get_token.outputs.token }}
+
